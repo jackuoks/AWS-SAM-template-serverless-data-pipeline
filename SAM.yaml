@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: >
+  AWS SAM Template for a serverless data pipeline with Kinesis Data Stream, Lambda function, and S3 bucket.
+
+Resources:
+  # Kinesis Data Stream
+  MyKinesisStream:
+    Type: 'AWS::Kinesis::Stream'
+    Properties:
+      ShardCount: 1
+
+  # S3 Bucket
+  MyS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-bucket"
+
+  # Lambda Function
+  MyLambdaFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs14.x
+      CodeUri: ./src
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref MyS3Bucket
+      Events:
+        KinesisEvent:
+          Type: Kinesis
+          Properties:
+            Stream: !GetAtt MyKinesisStream.Arn
+            StartingPosition: TRIM_HORIZON
+
+Outputs:
+  BucketName:
+    Description: 'The name of the S3 bucket'
+    Value: !Ref MyS3Bucket
+
+  LambdaFunctionName:
+    Description: 'The name of the Lambda function'
+    Value: !Ref MyLambdaFunction
+
+  KinesisStreamName:
+    Description: 'The name of the Kinesis Data Stream'
+    Value: !Ref MyKinesisStream
